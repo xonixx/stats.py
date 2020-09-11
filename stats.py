@@ -10,7 +10,7 @@ DEFAULT_EXT = [
 ]
 
 exclude_dirs = [
-    '.svn', 'exploded'
+    '.svn', 'exploded', 'node_modules'
 ]
 
 TRACE = False
