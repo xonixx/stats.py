@@ -1,17 +1,11 @@
-
+#!/usr/bin/env python3
 
 import os
 import os.path
+import argparse
 
-src_dirs = [
-    r'D:\TEST\JAVA\ZloSearcher\trunk\zlo_search\src',
-    r'D:\TEST\JAVA\ZloSearcher\trunk\zlo_web\src',
-    r'D:\TEST\JAVA\ZloSearcher\trunk\zlo_web\WEB-INF',
-    r'D:\TEST\JAVA\ZloSearcher\trunk\zlo_web\resources',
-    r'D:\TEST\JAVA\ZloSearcher\trunk\zlo_search\DB Scripts']
-
-exts = [
-    'java', 'jsp', 'xml', 'properties', 'sql', 'css', 'js'
+DEFAULT_EXT = [
+    'java', 'jsp', 'xml', 'properties', 'sql', 'css', 'js', 'cs'
 ]
 
 exclude_dirs = [
@@ -20,11 +14,27 @@ exclude_dirs = [
 
 TRACE = False
 
+argparse = argparse.ArgumentParser(description='Simple source code stats')
+
+argparse.add_argument('-e',
+                      type=str,
+                      help='list of extensions')
+
+argparse.add_argument('-t',
+                      action='store_true',
+                      help='trace')
+
+args, unknown = argparse.parse_known_args()
+
+exts = args.e.split(",") if args.e else DEFAULT_EXT
+TRACE = bool(args.t)
+src_dirs = unknown
+
 
 def process_dir(_dir):
     if os.path.basename(_dir) in exclude_dirs:
         return
-    if TRACE: print 'Scanning', _dir
+    if TRACE: print('Scanning', _dir)
     for _file in os.listdir(_dir):
         f = _dir + '/' + _file
         if os.path.isdir(f):
@@ -32,15 +42,17 @@ def process_dir(_dir):
         elif os.path.isfile(f) and any([f.endswith('.' + ext) for ext in exts]):
             process_file(f)
 
+
 def process_file(f_name):
     f = open(f_name)
     file_content = f.read()
     f.close()
-    if TRACE: print '\tFile:', f_name, get_loc(file_content), get_f_size(f_name)
+    if TRACE: print('\tFile:', f_name, get_loc(file_content), get_f_size(f_name))
     ext = get_ext(f_name)
     stat[ext]["loc"] += get_loc(file_content)
     stat[ext]["size"] += get_f_size(f_name)
     stat[ext]["count"] += 1
+
 
 def get_ext(f_name):
     if '.' in f_name:
@@ -48,33 +60,37 @@ def get_ext(f_name):
     else:
         return ''
 
+
 def get_loc(content):
     return len(content.split('\n'))
 
+
 def get_f_size(f_name):
     return os.path.getsize(f_name)
+
 
 def init():
     global stat
     stat = {}
     for ext in exts:
-        stat[ext] = {"count":0, "loc":0, "size":0}
+        stat[ext] = {"count": 0, "loc": 0, "size": 0}
+
 
 def format_size(size):
     return ''.join(['{', str(size / 1024), 'kb ', str(size % 1024), 'b}'])
+
 
 def report():
     total_loc = 0
     total_size = 0
     total_cnt = 0
-    print "Ext | count | loc | size"
+    print("Ext | count | loc | size")
     for ext in stat:
-        print " | ".join(str(s) for s in [ext, stat[ext]["count"], stat[ext]["loc"] , format_size(stat[ext]["size"])])
+        print(" | ".join(str(s) for s in [ext, stat[ext]["count"], stat[ext]["loc"], format_size(stat[ext]["size"])]))
         total_loc += stat[ext]["loc"]
         total_size += stat[ext]["size"]
         total_cnt += stat[ext]["count"]
-    print " | ".join(str(s) for s in ["Total", total_cnt, total_loc, format_size(total_size)])
-
+    print(" | ".join(str(s) for s in ["Total", total_cnt, total_loc, format_size(total_size)]))
 
 
 if __name__ == '__main__':
