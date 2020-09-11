@@ -3,9 +3,10 @@
 import os
 import os.path
 import argparse
+import math
 
 DEFAULT_EXT = [
-    'java', 'jsp', 'xml', 'properties', 'sql', 'css', 'js', 'cs'
+    'java', 'jsp', 'xml', 'yml', 'yaml', 'properties', 'sql', 'css', 'js', 'cs'
 ]
 
 exclude_dirs = [
@@ -44,7 +45,7 @@ def process_dir(_dir):
 
 
 def process_file(f_name):
-    f = open(f_name)
+    f = open(f_name, errors='ignore')
     file_content = f.read()
     f.close()
     if TRACE: print('\tFile:', f_name, get_loc(file_content), get_f_size(f_name))
@@ -76,21 +77,42 @@ def init():
         stat[ext] = {"count": 0, "loc": 0, "size": 0}
 
 
-def format_size(size):
-    return ''.join(['{', str(size / 1024), 'kb ', str(size % 1024), 'b}'])
-
-
 def report():
     total_loc = 0
     total_size = 0
     total_cnt = 0
     print("Ext | count | loc | size")
     for ext in stat:
-        print(" | ".join(str(s) for s in [ext, stat[ext]["count"], stat[ext]["loc"], format_size(stat[ext]["size"])]))
+        size = stat[ext]["size"]
+        print(" | ".join(str(s) for s in [ext, stat[ext]["count"], stat[ext]["loc"], renderFileSize(size)]))
         total_loc += stat[ext]["loc"]
-        total_size += stat[ext]["size"]
+        total_size += size
         total_cnt += stat[ext]["count"]
-    print(" | ".join(str(s) for s in ["Total", total_cnt, total_loc, format_size(total_size)]))
+    print(" | ".join(str(s) for s in ["TOTAL", total_cnt, total_loc, renderFileSize(total_size)]))
+
+
+# Renders human-readable file size. Ex.: "15 KB". Based on
+# http://stackoverflow.com/a/3758880/104522
+#
+# @param bytes file size in bytes
+# @return human-readable file size
+def renderFileSize(bytes: int):
+    return humanReadableByteCount(bytes, False).replace("i", "")
+
+
+# Renders human-readable file size. Ex.: "15 KB". Based on
+# http://stackoverflow.com/a/3758880/104522
+#
+# @param bytes file size in bytes
+# @param si true to use units of 1000, otherwise 1024
+# @return human-readable file size
+def humanReadableByteCount(bytes: int, si: bool):
+    unit = 1000 if si else 1024
+    if bytes < unit:
+        return str(bytes) + " B"
+    exp = int(math.log(bytes) / math.log(unit))
+    pre = ("kMGTPE" if si else "KMGTPE")[exp - 1] + ("" if si else "i")
+    return "{:.1f} {}B".format(bytes / math.pow(unit, exp), pre)
 
 
 if __name__ == '__main__':
